@@ -4,30 +4,34 @@ import random
 
 # Konfiguracja strony
 st.set_page_config(
-    page_title="Darmowy Generator Fisek z PDF",
+    page_title="Darmowy Generator Fisek i Notatek",
     page_icon="📚",
     layout="centered"
 )
 
-st.title("📚 Generator Fisek i Notatek z PDF")
-st.write("Wrzuć swój plik PDF z notatkami lub podręcznikiem, a aplikacja wygeneruje z niego materiał do powtórek.")
+st.title("📚 Generator Fisek i Notatek z Pliku")
+st.write("Wrzuć plik PDF lub TXT z notatkami, a aplikacja wygeneruje z niego materiał do powtórek.")
 
-# Sekcja wgrania pliku
-uploaded_file = st.file_uploader("Wybierz plik PDF", type=["pdf"])
+# Sekcja wgrania pliku (teraz przyjmuje też .txt!)
+uploaded_file = st.file_uploader("Wybierz plik", type=["pdf", "txt"])
 
 if uploaded_file is not None:
     @st.cache_data
-    def extract_text_from_pdf(file):
-        reader = pypdf.PdfReader(file)
+    def extract_text(file, file_name):
         text = ""
-        for page in reader.pages:
-            extracted = page.extract_text()
-            if extracted:
-                text += extracted + "\n"
+        if file_name.endswith('.pdf'):
+            reader = pypdf.PdfReader(file)
+            for page in reader.pages:
+                extracted = page.extract_text()
+                if extracted:
+                    text += extracted + "\n"
+        else:
+            # Obsługa pliku tekstowego TXT
+            text = file.getvalue().decode("utf-8")
         return text
 
-    with st.spinner("Przetwarzam plik PDF..."):
-        raw_text = extract_text_from_pdf(uploaded_file)
+    with st.spinner("Przetwarzam plik..."):
+        raw_text = extract_text(uploaded_file, uploaded_file.name)
 
     st.success(f"Pomyślnie wczytano plik! Liczba znaków: {len(raw_text)}")
 
@@ -36,7 +40,7 @@ if uploaded_file is not None:
         lines = [line.strip() for line in raw_text.split('\n') if len(line.strip()) > 30]
         
         if len(lines) < 2:
-            st.warning("Tekst jest zbyt krótki lub ma niestandardowy format, aby utworzyć fiszki.")
+            st.warning("Tekst jest zbyt krótki lub ma niestandardowy format, aby utworzyć fiszki. Dodaj dłuższe zdania.")
         else:
             flashcards = []
             for i, line in enumerate(lines[:30]):
